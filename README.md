@@ -166,49 +166,68 @@ StandardScaler를 이용해 각 컬럼별 데이터의 스케일을 맞춰주는
 </details>
 
 <details><summary> <b> Book Data </b> </summary>
-Multimodal
+<br>
+
+**Multimodal**
+
 Book Data에서 Book Title 컬럼은 Text Embedding을, Image-URL컬럼은 Image Embedding을, Book Author, Publisher는 Categorical Embedding을 진행하고 Publication_year의 경우 StandardScaler를 이용해 스케일을 조정해주었다.
 
-Text Embedding
+1. Text Embedding
+
 SBERT의 clip-ViT-B-32모델을 이용해 임베딩을 진행했다. 위 모델은 이미지와 텍스트를 같은 벡터 공간으로 임베딩하는데 유용하다. 텍스트 임베딩 벡터의 차원은 512이다.
 
-Image Embedding
+2. Image Embedding
+
 Image-URL컬럼의 경우 이미지를 다운로드 받을 수 있는 링크로 구성되어 있다. 이를 다운로드받아 리스트에 append하며 이미지가 존재하지 않는 경우 검정 이미지를 생성해 이를 append해주었다. 임베딩 결과는 텍스트 임베딩 벡터와 마찬가지로 한 이미지가 512개의 값으로 표현된다.
 
-Categorical Embedding
+3. Categorical Embedding
+
 Author와 Publisher의 경우 고유값 리스트를 생성한 뒤, binary encoder를 이용해 인코딩을 진행했다. binary encoder를 이용하면 one-hot encoding을 이용하는 것보다 dense한 벡터를 추출할 수 있다. 임베딩 결과 author는 8개, publisher는 10개의 이진 벡터를 추출했다.
 
-Dimension Scaling
+4. Dimension Scaling
+
 특징 벡터를 포함해 GCMC를 수행하기 위해서는 유저와 책의 특징 벡터의 열의 차원을 통일시켜주어야 한다. User의 특징 벡터의 경우 3, Book의 특징 벡터의 경우 1042이므로 이를 통일된 D로 스케일링하는 것을 목적으로 한다.
+
+<div style="text-align: center;">
+  <img src="./images/dimension_scaling.png" /> <br>
+</div><br>
 
 본 R&D에서는 PCA. Neural Network, Variational AutoEncoder의 세 가지 방식으로 차원을 통일하고자 한다.
 
-PCA
+- PCA
+
 PCA(Principal component analysis)는 고차원의 데이터를 저차원의 데이터로 환원시키는 데 사용되며 표본의 차이를 가장 잘 나타내는 성분들로 분해하는 기법이다.
 PCA의 경우 User Data의 열 차원 수에 맞춰 주성분의 수를 3으로 설정하였다.
 
-Variational AutoEncoder
+- Variational AutoEncoder
+
 VAE는 기존 데이터의 확률 분포를 유지하여 새로운 데이터를 생성하는 모델이다. VAE의 경우 PCA와 마찬가지로 User Data의 열 차원 수에 맞춰 주성분의 수를 3으로 설정하였다.
 
-Neural Network
+- Neural Network
 NN을 이용한 방식은 앞선 두가지 방식과는 다르게 User와 Book의 특징 벡터 차원을 9로 설정하였다. User의 경우 3에서 9차원으로 차원이 증가하며, Book의 경우 1042에서 9차원으로 축소된다. 
 
 </details>
 
-<details><summary> <b> Book Data </b> </summary>
-Graph Embedding
+<details><summary> <b> Graph Embedding </b> </summary>
+
 기존의 분석방법론에서 아이디어는 유저, 북 각각의 소셜네트워크나 지식그래프를 그래프 임베딩을 통해 side information으로 이용하여, feature engineering을 통해 구한 특징벡터와 함께 사용하는 것이었다. 
+
 하지만 해당 데이터의 유저, 북 테이블을 이용하여 별도의 소셜 네트워크, 지식그래프를 형성하는 것은 불가하다고 판단하여 그래프 임베딩을 feature vector로 사용하는 2가지 아이디어를 이용해 분석을 진행한다.
 
-Idea1
-
+1. Idea1
 
 User/Book Feature를 이용하여 유사도를 계산한 후 fully connected 그래프를 형성한다. 그리고 유사도가 비슷한 노드가 가깝게 위치하도록 그래프 임베딩을 진행한다.
+<div style="text-align: center;">
+  <img src="./images/idea1.png" /> <br>
+</div><br>
 
-Idea 2
 
+2. Idea 2
 
 User/Book Feature를 이용하여 그래프를 형성한 후 node2vec을 이용하여  유사한 노드가 가깝게 위치하도록 그래프 임베딩을 진행한다.
+<div style="text-align: center;">
+  <img src="./images/idea2.png" /> <br>
+</div><br>
 
 </details>
 
@@ -216,96 +235,122 @@ User/Book Feature를 이용하여 그래프를 형성한 후 node2vec을 이용�
 
 두 가지의 방법으로 데이터를 추출하여 분석을 수행한다.
 
-<details><summary> <b> Book Data </b> </summary>
-10권 이상의 책에 평점을 남긴 유저 & 10명 이상의 유저가 평점을 남긴 책 데이터
+<details><summary> <b> 10권 이상의 책에 평점을 남긴 유저 & 10명 이상의 유저가 평점을 남긴 책 데이터 </b> </summary>
 
 edge가 많은 node를 추출하여 많은 연결성과 정보를 바탕으로 콜드 스타트 문제를 보완하여 학습시킨다.
 
-Feature Vector가 없는 경우
+1. Feature Vector가 없는 경우
+<div style="text-align: center;">
+  <img src="./images/Aresult_basic.png" /> <br>
+</div><br>
 
+2. Multi modal - PCA
+<div style="text-align: center;">
+  <img src="./images/Aresult_pca.png" /> <br>
+</div><br>
 
+3. Multi modal - VAE
+<div style="text-align: center;">
+  <img src="./images/Aresult_vae.png" /> <br>
+</div><br>
 
-Multi modal - PCA
+4. Multi modal - Neural network
+<div style="text-align: center;">
+  <img src="./images/Aresult_nn.png" /> <br>
+</div><br>
 
-		
-Multi modal - VAE
-		
-Multi modal - Neural network
+5. Graph Embedding Idea1
+<div style="text-align: center;">
+  <img src="./images/Aresult_graph1.png" /> <br>
+</div><br>
 
-
-
-Graph Embedding Idea1
-
-
-
-Graph Embedding Idea2
-
-
+6. Graph Embedding Idea2
+<div style="text-align: center;">
+  <img src="./images/Aresult_graph2.png" /> <br>
+</div><br>
 
 </details>
 
-<details><summary> <b> Book Data </b> </summary>
-1~10점의 평점이 고르게 분포된 데이터
+<details><summary> <b> 1~10점의 평점이 고르게 분포된 데이터 </b> </summary>
 
 기존의 데이터는 점수별 불균형 문제를 고려하지 않았으므로 가장 레코드 수가 적은 1점의 레코드 수 870에 맞춰 총 8700개의 데이터를 추출했다. 점수가 고르게 분포된 데이터를 이용하여 클래스 불균형의 문제를 보완하여 학습시킨다.
 
-Feature Vector가 없는 경우
+1. Feature Vector가 없는 경우
+<div style="text-align: center;">
+  <img src="./images/Bresult_basic.png" /> <br>
+</div><br>
 
+2. Multi modal - PCA
+<div style="text-align: center;">
+  <img src="./images/Bresult_pca.png" /> <br>
+</div><br>
 
+3. Multi modal - VAE
+<div style="text-align: center;">
+  <img src="./images/Bresult_vae.png" /> <br>
+</div><br>
 
-Multi modal - PCA
+4. Multi modal - Neural network
+<div style="text-align: center;">
+  <img src="./images/Bresult_nn.png" /> <br>
+</div><br>
 
-
-
-Multi modal - VAE
-
-
-
-Multi modal - Neural network
-
-
-
-Graph Embedding Idea2
-
+5. Graph Embedding Idea2
+<div style="text-align: center;">
+  <img src="./images/Bresult_graph2.png" /> <br>
+</div><br>
 
 </details>
 
 ### 결과 분석 및 비교
 
-<details><summary> <b> Book Data </b> </summary>
-10권 이상의 책에 평점을 남긴 유저 & 10명 이상의 유저가 평점을 남긴 책 데이터
+<details><summary> <b> 10권 이상의 책에 평점을 남긴 유저 & 10명 이상의 유저가 평점을 남긴 책 데이터 </b> </summary>
 
-[성능] 대체적으로 모든 방법의 Test RMSE가 3점에서 시작되어 2점으로 끝나는 비슷한 성능을 보였음
+1. **[성능]** 대체적으로 모든 방법의 Test RMSE가 3점에서 시작되어 2점으로 끝나는 비슷한 성능을 보였음
 
-Feature Engineering에서 그래프 임베딩을 통해 특징벡터를 추출하는 그래프 임베딩 아이디어2 방법이 가장 좋은 성능을 보임.
+2. **Feature Engineering**에서 그래프 임베딩을 통해 특징벡터를 추출하는 그래프 임베딩 아이디어2 방법이 가장 좋은 성능을 보임.
 이는  node2vec을 이용하여 그래프의 구조적인 관점에서 유사한 노드를 가까운 위치에 임베딩 한 것이 결과에 긍정적인 영향을 미쳤다는 것을 확인할 수 있음
 
-[과적합] rmse가 줄어들다가 어느순간부터 늘어나는 추세를 보이는 부분은 트레인셋에 오버피팅이 되었다고 생각할 수 있고 적절한 epoch설정이 필요로해 보임
+3. **[과적합]** rmse가 줄어들다가 어느순간부터 늘어나는 추세를 보이는 부분은 트레인셋에 오버피팅이 되었다고 생각할 수 있고 적절한 epoch설정이 필요로해 보임
 
-[optimizer] epoch 0~200에서 급격하게 학습이 되는 것을 알 수 있고 이는 optimizer Adam의 특성에 부합한다고 볼 수 있음
+4. **[optimizer]** epoch 0~200에서 급격하게 학습이 되는 것을 알 수 있고 이는 optimizer Adam의 특성에 부합한다고 볼 수 있음
 
-[클래스 불균형] 예측값과 실제 값을 출력해 본 결과 대부분 5 이상의 값으로만 예측을 하며 낮은 점수에 대해 예측 성능이 낮은 것을 확인하였고, 본 데이터에 5-10점의 데이터가 많음에도 불구하고 클래스 불균형 문제를 고려하지 않은 결과라고 판단됨
+5. **[클래스 불균형]** 예측값과 실제 값을 출력해 본 결과 대부분 5 이상의 값으로만 예측을 하며 낮은 점수에 대해 예측 성능이 낮은 것을 확인하였고, 본 데이터에 5-10점의 데이터가 많음에도 불구하고 클래스 불균형 문제를 고려하지 않은 결과라고 판단됨
 
-1~10점의 평점이 고르게 분포된 데이터
-[과적합] 트레인셋은 계속 학습이 되는 반면, 테스트셋은 성능이 점점 떨어지는 것을 보아 트레인셋에 과적합 되어가고 있다고 유추할 수 있음. 
+</details>
 
-[데이터] 클래스 불균형 문제를 해결했기 때문에 불균형한 A 데이터에 비해 성능이 향상될 것이라고 예측했으나 가정이 만족되지 않았음. 
+<details><summary> <b> 1~10점의 평점이 고르게 분포된 데이터 </b> </summary>
+
+1. **[과적합]** 트레인셋은 계속 학습이 되는 반면, 테스트셋은 성능이 점점 떨어지는 것을 보아 트레인셋에 과적합 되어가고 있다고 유추할 수 있음. 
+
+2. **[데이터]** 클래스 불균형 문제를 해결했기 때문에 불균형한 A 데이터에 비해 성능이 향상될 것이라고 예측했으나 가정이 만족되지 않았음.<br> 
 이는  A의 데이터와 달리 데이터의 양 자체도 크게 감소하였으며  여러 유저에게 평점을 받은 아이템이 없어 그래프가 sparse해졌기 떄문에 edge에 대한 encoder에서의 학습이 부족해 결과가 좋지 않았다고 생각됨.
 
-[cold start] sparse한 그래프에서 feature vector, 그래프 임베딩을 이용하면 cold start 문제를 어느정도 보완할 수 있을 것이라 생각하였지만 이를 이용한 분석에서도 좋지 않은 성능을 보임.
+3. **[cold start]** sparse한 그래프에서 feature vector, 그래프 임베딩을 이용하면 cold start 문제를 어느정도 보완할 수 있을 것이라 생각하였지만 이를 이용한 분석에서도 좋지 않은 성능을 보임.
 이는 로우 데이터를 잘 나타내는 Feature Engineering을 하지 못하였거나 데이터가 부족하여 결과가 좋지 않았다고 생각됨.
 
 </details>
 
-<details><summary> <b> Book Data </b> </summary>
-하이퍼 파라미터 튜닝
+<details><summary> <b> 하이퍼 파라미터 튜닝 </b> </summary>
 
 다음은 고도화를 위해 진행한 모델의 하이퍼파라미터 튜닝 결과이다.
 하이퍼 파라미터 튜닝은 A(10권 이상의 책에 평점을 남긴 유저 & 10명 이상의 유저가 평점을 남긴 책 데이터) 데이터에 한해서 진행하였다.
 
+| Configuration | Epoch | Learning Rate | Hidden Layer | Drop Out | RMSE  |
+|---------------|-------|---------------|--------------|----------|-------|
+| Default       | 1000  | 0.01          | 500, 75      | 0.7      | 1.95  |
+| Tuning 1      | 1000  | 0.1           | 500, 75      | 0.7      | 3.03  |
+| Tuning 2      | 1000  | 0.001         | 500, 75      | 0.7      | 1.79  |
+| Tuning 3      | 1000  | 0.0001        | 500, 75      | 0.7      | 2.04  |
+| Tuning 4      | 1000  | 0.01          | 250, 75      | 0.7      | 1.94  |
+| Tuning 5      | 1000  | 0.01          | 750, 75      | 0.7      | 1.90  |
+| Tuning 6      | 1000  | 0.01          | 1000, 100    | 0.7      | 1.89  |
+| Tuning 7      | 1000  | 0.01          | 500, 75      | 0.9      | 2.0   |
+| Tuning 8      | 1000  | 0.01          | 500, 75      | 0.1      | 1.87  |
+| Tuning 9      | 1000  | 0.01          | 500, 75      | 0        | 1.80  |
+| Best          | 150   | 0.01          | 500, 75      | 0        | 1.67  |
 
-
-이를 통해 Optimizer인 Adam의 특성상 Epoch가 150~200쯤에서 대부분의 학습이 이루어지며 Learning Rate는 값이 작을 수록 학습률이 높아지고 hidden layer의 수가 많을수록 학습이 잘 되며 Drop out이 작을 수록 학습이 잘 된다는 결론을 내릴 수 있었으며 최종 RMSE를 1.67로 모델의 성능을 더욱 향상 시킬 수 있었다.
+이를 통해 Optimizer인 Adam의 특성상 Epoch가 150~200쯤에서 대부분의 학습이 이루어지며 Learning Rate는 값이 작을 수록 학습률이 높아지고 hidden layer의 수가 많을수록 학습이 잘 되며 Drop out이 작을 수록 학습이 잘 된다는 결론을 내릴 수 있었으며 최종 RMSE를 1.67로 모델의 성능을 더욱 향상 시킬 수 있었다.<br>
 Hidden Layer, Drop out과 같은 하이퍼파라미터는 성능과 계산량이 Trade Off 관계이므로 값이 클수록 학습이 잘되지만 시간이 오래 걸리기 때문에 지금보다 더욱 많은 데이터를 다룰 때에는 어느정도의 성능을 포기하더라도 계산량을 줄이는 등 적절한 튜닝이 필요함을 알 수 있었다.
 
 </details>
